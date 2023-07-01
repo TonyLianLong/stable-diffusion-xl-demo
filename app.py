@@ -23,9 +23,13 @@ else:
     model_key_base = "stabilityai/stable-diffusion-xl-base-0.9"
     model_key_refiner = "stabilityai/stable-diffusion-xl-refiner-0.9"
 
-enable_refiner = True
+# Use refiner (enabled by default)
+enable_refiner = os.getenv("ENABLE_REFINER", "true").lower() == "true"
 # Output images before the refiner and after the refiner
-output_images_before_refiner = False
+output_images_before_refiner = os.getenv("OUTPUT_IMAGES_BEFORE_REFINER", "false").lower() == "true"
+
+# Create public link
+share = os.getenv("SHARE", "false").lower() == "true"
 
 print("Loading model", model_key_base)
 pipe = DiffusionPipeline.from_pretrained(model_key_base, torch_dtype=torch.float16, use_safetensors=True, variant="fp16", use_auth_token=access_token)
@@ -52,26 +56,29 @@ if enable_refiner:
 # NOTE: we do not have word list filtering in this gradio demo
 
 is_gpu_busy = False
-def infer(prompt, negative, scale, num_generation=4):
-    prompt, negative = [prompt] * num_generation, [negative] * num_generation
-    images = pipe(prompt=prompt, negative_prompt=negative, guidance_scale=scale).images
-
-    images_b64_list = []
-
-    if not enable_refiner and output_images_before_refiner:
-        for image in images:
-            buffered = BytesIO()
-            image.save(buffered, format="JPEG")
-            img_str = base64.b64encode(buffered.getvalue()).decode("utf-8")
-            
-            image_b64 = (f"data:image/jpeg;base64,{img_str}")
-            images_b64_list.append(image_b64)
+def infer(prompt, negative, scale, samples=4, steps=50, refiner_steps=15):
+    prompt, negative = [prompt] * samples, [negative] * samples
+    images = pipe(prompt=prompt, negative_prompt=negative, guidance_scale=scale, num_inference_steps=steps).images
 
     gc.collect()
     torch.cuda.empty_cache()
 
+    images_b64_list = []
+
     if enable_refiner:
-        images = pipe_refiner(prompt=prompt, negative_prompt=negative, image=images).images
+        if output_images_before_refiner:
+            for image in images:
+                buffered = BytesIO()
+                image.save(buffered, format="JPEG")
+                img_str = base64.b64encode(buffered.getvalue()).decode("utf-8")
+                
+                image_b64 = (f"data:image/jpeg;base64,{img_str}")
+                images_b64_list.append(image_b64)
+
+        images = pipe_refiner(prompt=prompt, negative_prompt=negative, image=images, num_inference_steps=refiner_steps).images
+
+        gc.collect()
+        torch.cuda.empty_cache()
 
     for image in images:
         buffered = BytesIO()
@@ -348,11 +355,15 @@ with block:
 
         with gr.Accordion("Advanced settings", open=False):
         #    gr.Markdown("Advanced settings are temporarily unavailable")
-        #    samples = gr.Slider(label="Images", minimum=1, maximum=4, value=4, step=1)
-        #    steps = gr.Slider(label="Steps", minimum=1, maximum=50, value=45, step=1)
-             guidance_scale = gr.Slider(
+            samples = gr.Slider(label="Images", minimum=1, maximum=4, value=4, step=1)
+            steps = gr.Slider(label="Steps", minimum=1, maximum=250, value=50, step=1)
+            if enable_refiner:
+                refiner_steps = gr.Slider(label="Refiner Steps", minimum=1, maximum=50, value=15, step=1)
+            else:
+                refiner_steps = gr.Slider(label="Refiner Steps (refiner not enabled)", minimum=0, maximum=0, value=0, step=1)
+            guidance_scale = gr.Slider(
                 label="Guidance Scale", minimum=0, maximum=50, value=9, step=0.1
-             )
+            )
         #    seed = gr.Slider(
         #        label="Seed",
         #        minimum=0,
@@ -363,9 +374,9 @@ with block:
 
         ex = gr.Examples(examples=examples, fn=infer, inputs=[text, negative, guidance_scale], outputs=[gallery, community_icon, loading_icon, share_button], cache_examples=False)
         ex.dataset.headers = [""]
-        negative.submit(infer, inputs=[text, negative, guidance_scale], outputs=[gallery], postprocess=False)
-        text.submit(infer, inputs=[text, negative, guidance_scale], outputs=[gallery], postprocess=False)
-        btn.click(infer, inputs=[text, negative, guidance_scale], outputs=[gallery], postprocess=False)
+        negative.submit(infer, inputs=[text, negative, guidance_scale, samples, steps, refiner_steps], outputs=[gallery], postprocess=False)
+        text.submit(infer, inputs=[text, negative, guidance_scale, samples, steps, refiner_steps], outputs=[gallery], postprocess=False)
+        btn.click(infer, inputs=[text, negative, guidance_scale, samples, steps, refiner_steps], outputs=[gallery], postprocess=False)
         
         #advanced_button.click(
         #    None,
@@ -401,6 +412,5 @@ Despite how impressive being able to turn text into image is, beware to the fact
                </div>
                 """
             )
-        
 
-block.queue().launch()
+block.queue().launch(share=share)
