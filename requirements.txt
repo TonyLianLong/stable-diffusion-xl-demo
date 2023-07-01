@@ -1,5 +1,5 @@
 --extra-index-url https://download.pytorch.org/whl/cu113
-torch
+torch==2.0.1
 python-dotenv
 accelerate
 transformers
