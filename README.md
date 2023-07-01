@@ -15,6 +15,10 @@ This is a gradio demo supporting [Stable Diffusion XL 0.9](https://github.com/St
 
 This is forked from [StableDiffusion v2.1 Demo](https://huggingface.co/spaces/gradio-client-demos/stable-diffusion). Refer to the git commits to see the changes.
 
+**Update:** Colab is supported! You can run this demo on Colab for free even on T4. <a target="_blank" href="https://colab.research.google.com/github/TonyLianLong/stable-diffusion-xl-demo/blob/main/Stable_Diffusion_XL_Demo.ipynb">
+  <img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/>
+</a>
+
 ## Examples
 Left: SDXL 0.9. Right: [SD v2.1](https://huggingface.co/spaces/gradio-client-demos/stable-diffusion).
 
@@ -58,7 +62,7 @@ pip install git+https://github.com/huggingface/diffusers.git@sd_xl
 ```
 
 ## Launching
-You need to [apply here](https://huggingface.co/stabilityai/stable-diffusion-xl-base-0.9) to get access to the weights.
+It's free but you need to [submit a quick form](https://huggingface.co/stabilityai/stable-diffusion-xl-base-0.9) to get access to the weights.
 
 There are two ways to load the weights. After getting access to weights, you can either clone them locally or this repo can load them for you.
 
@@ -69,7 +73,7 @@ PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:512 SDXL_MODEL_DIR=/path_to_sdxl pytho
 ```
 
 ### Option 2
-If you want to load from the huggingface hub (please set up an [HuggingFace access token](https://huggingface.co/docs/hub/security-tokens)):
+If you want to load from the huggingface hub (please set up a [HuggingFace access token](https://huggingface.co/docs/hub/security-tokens)):
 ```
 PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:512 ACCESS_TOKEN=YOUR_HF_ACCESS_TOKEN python app.py
 ```
@@ -82,13 +86,10 @@ Turn on `torch.compile` will make overall inference faster. However, this will a
 2. Turn off refiner by setting `enable_refiner` to False.
 3. More ways to [save memory and make things faster](https://huggingface.co/docs/diffusers/optimization/fp16).
 
+### Several options through environment variables
+* `SDXL_MODEL_DIR` and `ACCESS_TOKEN`: load SDXL locally or from HF hub.
+* `ENABLE_REFINER=true/false` turn on/off the refiner ([refiner](https://huggingface.co/stabilityai/stable-diffusion-xl-refiner-0.9) refines the generation).
+* `OUTPUT_IMAGES_BEFORE_REFINER=true/false` useful is refiner is enabled. Output images before and after the refiner stage.
+* `SHARE=true/false` creates public link (useful for sharing and on colab)
+
 ## If you enjoy this demo, please give [this repo](https://github.com/TonyLianLong/stable-diffusion-xl-demo) a star ⭐.
-I can also help generating a few images. Please create an issue for this.
-
-If you have access to resources, please also help others with requests.
-
-However, please abide by [the SD XL 0.9 license](https://huggingface.co/stabilityai/stable-diffusion-xl-base-0.9). **No commercial uses are permitted from these images.**
-
-
-Feel free to also browse [my other projects](https://github.com/TonyLianLong).
-
