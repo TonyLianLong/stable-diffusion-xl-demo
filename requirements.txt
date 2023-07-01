@@ -1,1 +1,10 @@
 python-dotenv
+accelerate
+transformers
+invisible-watermark
+numpy>=1.17
+PyWavelets>=1.1.1
+opencv-python>=4.1.0.25
+safetensors
+gradio==3.11.0
+git+https://github.com/huggingface/diffusers.git@sd_xl

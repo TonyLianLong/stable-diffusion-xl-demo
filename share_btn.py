@@ -43,7 +43,11 @@ share_js = """async () => {
             return new File([blob], fileName, { type: 'image/jpeg' });
         })
     );
-    const urls = await Promise.all(files.map((f) => uploadFile(f)));
+    try {
+        const urls = await Promise.all(files.map((f) => uploadFile(f)));
+    } catch (error) {
+        alert("Encountered error while trying to upload the images to HuggingFace. This is only supported when running on HuggingFace Space. You're probably running on localhost.")
+    }
 	const htmlImgs = urls.map(url => `<img src='${url}' width='400' height='400'>`);
 	const descriptionMd = `<div style='display: flex; flex-wrap: wrap; column-gap: 0.75rem;'>
 ${htmlImgs.join(`\n`)}

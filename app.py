@@ -1,32 +1,87 @@
 import gradio as gr
-from datasets import load_dataset
-from PIL import Image  
 
-import re
+from diffusers import DiffusionPipeline
+import torch
+
+import base64
+from io import BytesIO
 import os
-import requests
+import gc
 
 from share_btn import community_icon_html, loading_icon_html, share_js
 
-word_list_dataset = load_dataset("stabilityai/word-list", data_files="list.txt", use_auth_token=True)
-word_list = word_list_dataset["train"]['text']
+# SDXL code: https://github.com/huggingface/diffusers/pull/3859
+
+model_dir = os.getenv("SDXL_MODEL_DIR")
+access_token = os.getenv("ACCESS_TOKEN")
+
+if model_dir:
+    # Use local model
+    model_key_base = os.path.join(model_dir, "stable-diffusion-xl-base-0.9")
+    model_key_refiner = os.path.join(model_dir, "stable-diffusion-xl-refiner-0.9")
+else:
+    model_key_base = "stabilityai/stable-diffusion-xl-base-0.9"
+    model_key_refiner = "stabilityai/stable-diffusion-xl-refiner-0.9"
+
+enable_refiner = True
+# Output images before the refiner and after the refiner
+output_images_before_refiner = False
+
+print("Loading model", model_key_base)
+pipe = DiffusionPipeline.from_pretrained(model_key_base, torch_dtype=torch.float16, use_safetensors=True, variant="fp16", use_auth_token=access_token)
+
+pipe.enable_model_cpu_offload()
+# pipe.to("cuda")
+
+# if using torch < 2.0
+# pipe.enable_xformers_memory_efficient_attention()
+
+# pipe.unet = torch.compile(pipe.unet, mode="reduce-overhead", fullgraph=True)
+
+if enable_refiner:
+    print("Loading model", model_key_refiner)
+    pipe_refiner = DiffusionPipeline.from_pretrained(model_key_refiner, torch_dtype=torch.float16, use_safetensors=True, variant="fp16", use_auth_token=access_token)
+    pipe_refiner.enable_model_cpu_offload()
+    # pipe_refiner.to("cuda")
+
+    # if using torch < 2.0
+    # pipe_refiner.enable_xformers_memory_efficient_attention()
+
+    # pipe_refiner.unet = torch.compile(pipe_refiner.unet, mode="reduce-overhead", fullgraph=True)
+
+# NOTE: we do not have word list filtering in this gradio demo
 
 is_gpu_busy = False
-def infer(prompt, negative, scale):
-    global is_gpu_busy
-    for filter in word_list:
-        if re.search(rf"\b{filter}\b", prompt):
-            raise gr.Error("Unsafe content found. Please try again with different prompts.")
+def infer(prompt, negative, scale, num_generation=4):
+    prompt, negative = [prompt] * num_generation, [negative] * num_generation
+    images = pipe(prompt=prompt, negative_prompt=negative, guidance_scale=scale).images
+
+    images_b64_list = []
+
+    if not enable_refiner and output_images_before_refiner:
+        for image in images:
+            buffered = BytesIO()
+            image.save(buffered, format="JPEG")
+            img_str = base64.b64encode(buffered.getvalue()).decode("utf-8")
+            
+            image_b64 = (f"data:image/jpeg;base64,{img_str}")
+            images_b64_list.append(image_b64)
+
+    gc.collect()
+    torch.cuda.empty_cache()
+
+    if enable_refiner:
+        images = pipe_refiner(prompt=prompt, negative_prompt=negative, image=images).images
+
+    for image in images:
+        buffered = BytesIO()
+        image.save(buffered, format="JPEG")
+        img_str = base64.b64encode(buffered.getvalue()).decode("utf-8")
         
-    images = []
-    url = os.getenv('JAX_BACKEND_URL')
-    payload = {'prompt': prompt, 'negative_prompt': negative, 'guidance_scale': scale}
-    images_request = requests.post(url, json = payload)
-    for image in images_request.json()["images"]:
-        image_b64 = (f"data:image/jpeg;base64,{image}")
-        images.append(image_b64)
+        image_b64 = (f"data:image/jpeg;base64,{img_str}")
+        images_b64_list.append(image_b64)
     
-    return images
+    return images_b64_list
     
     
 css = """
@@ -230,12 +285,14 @@ with block:
                   <rect x="23" y="69" width="23" height="23" fill="black"></rect>
                 </svg>
                 <h1 style="font-weight: 900; margin-bottom: 7px;margin-top:5px">
-                  Stable Diffusion 2.1 Demo
+                  Stable Diffusion XL 0.9 Demo
                 </h1>
               </div>
               <p style="margin-bottom: 10px; font-size: 94%; line-height: 23px;">
-                Stable Diffusion 2.1 is the latest text-to-image model from StabilityAI. <a style="text-decoration: underline;" href="https://huggingface.co/spaces/stabilityai/stable-diffusion-1">Access Stable Diffusion 1 Space here</a><br>For faster generation and API
-                access you can try
+                Stable Diffusion XL 0.9 is the latest text-to-image model from StabilityAI. 
+                <a style="text-decoration: underline;" href="https://huggingface.co/spaces/stabilityai/stable-diffusion">Access SD v2.1 Space</a> <a style="text-decoration: underline;" href="https://huggingface.co/spaces/stabilityai/stable-diffusion-1">SD v1 Space</a>
+                <br/>
+                For faster generation and API access you can try
                 <a
                   href="http://beta.dreamstudio.ai/"
                   style="text-decoration: underline;"
@@ -329,7 +386,7 @@ with block:
         gr.HTML(
             """
                 <div class="footer">
-                    <p>Model by <a href="https://huggingface.co/stabilityai" style="text-decoration: underline;" target="_blank">StabilityAI</a> - backend running JAX on TPUs due to generous support of <a href="https://sites.research.google/trc/about/" style="text-decoration: underline;" target="_blank">Google TRC program</a> - Gradio Demo by 🤗 Hugging Face
+                    <p>Model by <a href="https://huggingface.co/stabilityai" style="text-decoration: underline;" target="_blank">StabilityAI</a> - Gradio Demo by 🤗 Hugging Face and <a style="text-decoration: underline;" href="https://tonylian.com/">Long (Tony) Lian</a>
                     </p>
                 </div>
            """
@@ -346,4 +403,4 @@ Despite how impressive being able to turn text into image is, beware to the fact
             )
         
 
-block.queue(concurrency_count=80, max_size=100).launch(max_threads=150)
+block.queue().launch()
