@@ -67,7 +67,7 @@ It's free but you need to [submit a quick form](https://huggingface.co/stability
 There are two ways to load the weights. After getting access to weights, you can either clone them locally or this repo can load them for you.
 
 ### Option 1
-If you have cloned both repo locally (please change the `path_to_sdxl`):
+If you have cloned both repo ([base](https://huggingface.co/stabilityai/stable-diffusion-xl-base-0.9), [refiner](https://huggingface.co/stabilityai/stable-diffusion-xl-refiner-0.9)) locally (please change the `path_to_sdxl`):
 ```
 PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:512 SDXL_MODEL_DIR=/path_to_sdxl python app.py
 ```
