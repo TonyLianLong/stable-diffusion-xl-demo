@@ -42,7 +42,7 @@ os.makedirs(BASE_PATH, exist_ok=True)
 def prompt_to_path(prompt, seed, i):
     return f"{BASE_PATH}/{seed}_{prompt.replace(' ', '_')}_{i}.jpg"
 
-def generate(prompt, negative, scale, samples=4, steps=50, refiner_steps=15, seed=0):
+def generate(prompt, negative, scale, samples=4, steps=50, refiner_strength=0.3, seed=0):
     generator = torch.Generator("cuda").manual_seed(seed)
     prompt_list, negative_list = [prompt] * samples, [negative] * samples
     
@@ -51,7 +51,7 @@ def generate(prompt, negative, scale, samples=4, steps=50, refiner_steps=15, see
     gc.collect()
     torch.cuda.empty_cache()
 
-    images = pipe_refiner(prompt=prompt_list, negative_prompt=negative_list, image=images, num_inference_steps=refiner_steps).images
+    images = pipe_refiner(prompt=prompt_list, negative_prompt=negative_list, image=images, num_inference_steps=steps, strength=refiner_strength).images
 
     gc.collect()
     torch.cuda.empty_cache()
@@ -63,4 +63,4 @@ neg_prompt = "low-quality, artifacts, blurry, smooth texture, bad quality, disto
 
 if __name__ == "__main__":
     for prompt_id, prompt in enumerate(tqdm(prompt_list)):
-        generate(prompt, neg_prompt, scale=9.0, samples=4, steps=50, refiner_steps=15, seed=prompt_id)
+        generate(prompt, neg_prompt, scale=9.0, samples=4, steps=50, refiner_strength=0.3, seed=prompt_id)
