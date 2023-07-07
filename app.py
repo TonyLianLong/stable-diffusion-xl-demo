@@ -56,7 +56,7 @@ if enable_refiner:
 # NOTE: we do not have word list filtering in this gradio demo
 
 is_gpu_busy = False
-def infer(prompt, negative, scale, samples=4, steps=50, refiner_steps=15):
+def infer(prompt, negative, scale, samples=4, steps=50, refiner_strength=0.3):
     prompt, negative = [prompt] * samples, [negative] * samples
     images = pipe(prompt=prompt, negative_prompt=negative, guidance_scale=scale, num_inference_steps=steps).images
 
@@ -75,7 +75,7 @@ def infer(prompt, negative, scale, samples=4, steps=50, refiner_steps=15):
                 image_b64 = (f"data:image/jpeg;base64,{img_str}")
                 images_b64_list.append(image_b64)
 
-        images = pipe_refiner(prompt=prompt, negative_prompt=negative, image=images, num_inference_steps=refiner_steps).images
+        images = pipe_refiner(prompt=prompt, negative_prompt=negative, image=images, num_inference_steps=steps, strength=refiner_strength).images
 
         gc.collect()
         torch.cuda.empty_cache()
@@ -358,9 +358,9 @@ with block:
             samples = gr.Slider(label="Images", minimum=1, maximum=4, value=4, step=1)
             steps = gr.Slider(label="Steps", minimum=1, maximum=250, value=50, step=1)
             if enable_refiner:
-                refiner_steps = gr.Slider(label="Refiner Steps", minimum=1, maximum=50, value=15, step=1)
+                refiner_strength = gr.Slider(label="Refiner Strength", minimum=0, maximum=1.0, value=0.3, step=0.1)
             else:
-                refiner_steps = gr.Slider(label="Refiner Steps (refiner not enabled)", minimum=0, maximum=0, value=0, step=1)
+                refiner_strength = gr.Slider(label="Refiner Strength (refiner not enabled)", minimum=0, maximum=0, value=0, step=0)
             guidance_scale = gr.Slider(
                 label="Guidance Scale", minimum=0, maximum=50, value=9, step=0.1
             )
@@ -374,9 +374,9 @@ with block:
 
         ex = gr.Examples(examples=examples, fn=infer, inputs=[text, negative, guidance_scale], outputs=[gallery, community_icon, loading_icon, share_button], cache_examples=False)
         ex.dataset.headers = [""]
-        negative.submit(infer, inputs=[text, negative, guidance_scale, samples, steps, refiner_steps], outputs=[gallery], postprocess=False)
-        text.submit(infer, inputs=[text, negative, guidance_scale, samples, steps, refiner_steps], outputs=[gallery], postprocess=False)
-        btn.click(infer, inputs=[text, negative, guidance_scale, samples, steps, refiner_steps], outputs=[gallery], postprocess=False)
+        negative.submit(infer, inputs=[text, negative, guidance_scale, samples, steps, refiner_strength], outputs=[gallery], postprocess=False)
+        text.submit(infer, inputs=[text, negative, guidance_scale, samples, steps, refiner_strength], outputs=[gallery], postprocess=False)
+        btn.click(infer, inputs=[text, negative, guidance_scale, samples, steps, refiner_strength], outputs=[gallery], postprocess=False)
         
         #advanced_button.click(
         #    None,

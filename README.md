@@ -15,12 +15,16 @@ This is a gradio demo supporting [Stable Diffusion XL 0.9](https://github.com/St
 
 This is forked from [StableDiffusion v2.1 Demo](https://huggingface.co/spaces/gradio-client-demos/stable-diffusion). Refer to the git commits to see the changes.
 
-**Update:** Seems like Reddit people released the weights to the public: [Reddit Post on the Leaked Weights](https://www.reddit.com/r/StableDiffusion/comments/14s04t1/happy_sdxl_leak_day/). The weights, if downloaded in the full folder, may be loaded with Option 1. **Though I have not tried the weights. Nor do I encourage using leaked weights.**
+**Update:** Seems like Reddit people released the weights to the public: [reddit post on the leaked weights](https://www.reddit.com/r/StableDiffusion/comments/14s04t1/happy_sdxl_leak_day/). The weights, if downloaded in the full folder, may be loaded with Option 1. **Though I have not tried the weights. Nor do I encourage using leaked weights.**
+
 **Update:** Colab is supported! You can run this demo on Colab for free even on T4. <a target="_blank" href="https://colab.research.google.com/github/TonyLianLong/stable-diffusion-xl-demo/blob/main/Stable_Diffusion_XL_Demo.ipynb">
   <img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/>
 </a>
 
 ## Examples
+
+**Update:** [See a more comprehensive comparison with 1200+ images here](https://github.com/TonyLianLong/stable-diffusion-xl-demo/tree/benchmark/benchmark). Both SD XL and SD v2.1 are benchmarked on prompts from [StableStudio](https://github.com/Stability-AI/StableStudio).
+
 Left: SDXL 0.9. Right: [SD v2.1](https://huggingface.co/spaces/gradio-client-demos/stable-diffusion).
 
 Without any tuning, SDXL generates much better images compared to SD v2.1!
