@@ -159,9 +159,10 @@ if __name__ == "__main__":
     prompt_to_filename = lambda prompt_id, prompt, i: f"{prompt_id}_{prompt.replace(' ', '_')}_{i}.jpg"
     # Print markdown table
     print("""<table>
-          <th><td>Prompt</td><td width='45%'>SD v2.1</td><td width='45%'>SDXL</td>""")
+          <th><td>Prompt</td><td width='30%'>SD v1.5</td><td width='30%'>SD v2.1</td><td width='30%'>SDXL</td>""")
     for prompt_id, prompt in enumerate(prompt_list):
+        sdv1_md = "".join([f'<img src="imgs_sdv1.5/{prompt_to_filename(prompt_id, prompt, i)}" width="48%" alt="SD v1.5">' for i in range(4)])
         sdv2_md = "".join([f'<img src="imgs_sdv2.1/{prompt_to_filename(prompt_id, prompt, i)}" width="48%" alt="SD v2.1">' for i in range(4)])
-        sdxl_md = "".join([f'<img src="imgs_sdxl/{prompt_to_filename(prompt_id, prompt, i)}" width="48%" alt="SD v2.1">' for i in range(4)])
-        print(f"<tr><td>{prompt_id+1}</td><td>{prompt}</td><td>{sdv2_md}</td><td>{sdxl_md}</td></tr>")
+        sdxl_md = "".join([f'<img src="imgs_sdxl/{prompt_to_filename(prompt_id, prompt, i)}" width="48%" alt="SD XL">' for i in range(4)])
+        print(f"<tr><td>{prompt_id+1}</td><td>{prompt}</td><td>{sdv1_md}</td><td>{sdv2_md}</td><td>{sdxl_md}</td></tr>")
     print("</table>")

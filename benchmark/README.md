@@ -1,7 +1,5 @@
 # Comparison: SDv1.5 vs SDv2.1 vs SDXL
-[View SDv1.5 vs SDXL only here](SDXL_SDv1.5.md)
-
-[View SDv2.1 vs SDXL only here](SDXL_SDv2.1.md)
+[View SDv1.5 vs SDXL here](SDXL_SDv1.5.md). [View SDv2.1 vs SDXL here](SDXL_SDv2.1.md).
 
 <table>
           <th><td>Prompt</td><td width='30%'>SD v1.5</td><td width='30%'>SD v2.1</td><td width='30%'>SDXL</td>
@@ -162,4 +160,4 @@
 
 # Benchmarking Script
 Simply run the scripts to benchmark both SD XL and SD v2.1. Run `prompts.py` to get the markdown table.
-Seeds are used so the generation should be reproducible (this is also why SDv1.5 results look aligned with SDv2.1 results).
+Seeds are used so the generation should be reproducible (this is also why SDv1.5 results look aligned with SDv2.1 results). At the same time, [feel free to try the SDXL demo on colab](https://github.com/TonyLianLong/stable-diffusion-xl-demo).
