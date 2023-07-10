@@ -10,10 +10,10 @@ pinned: true
 license: mit
 ---
 
-# StableDiffusion XL Gradio Demo
-This is a gradio demo supporting [Stable Diffusion XL 0.9](https://github.com/Stability-AI/generative-models). This demo loads the base and the refiner model.
+# StableDiffusion XL Gradio Demo WebUI
+This is a gradio demo with web ui supporting [Stable Diffusion XL 0.9](https://github.com/Stability-AI/generative-models). This demo loads the base and the refiner model.
 
-This is forked from [StableDiffusion v2.1 Demo](https://huggingface.co/spaces/gradio-client-demos/stable-diffusion). Refer to the git commits to see the changes.
+This is forked from [StableDiffusion v2.1 Demo WebUI](https://huggingface.co/spaces/gradio-client-demos/stable-diffusion). Refer to the git commits to see the changes.
 
 **Update:** Multiple GPUs are supported. You can easily spread the workload to different GPUs by setting `MULTI_GPU=True`. This uses data parallelism to split the workload to different GPUs.
 
