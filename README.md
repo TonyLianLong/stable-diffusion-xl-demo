@@ -15,6 +15,8 @@ This is a gradio demo supporting [Stable Diffusion XL 0.9](https://github.com/St
 
 This is forked from [StableDiffusion v2.1 Demo](https://huggingface.co/spaces/gradio-client-demos/stable-diffusion). Refer to the git commits to see the changes.
 
+**Update:** Multiple GPUs are supported. You can easily spread the workload to different GPUs by setting `MULTI_GPU=True`. This uses data parallelism to split the workload to different GPUs.
+
 **Update:** Seems like Reddit people released the weights to the public: [reddit post on the leaked weights](https://www.reddit.com/r/StableDiffusion/comments/14s04t1/happy_sdxl_leak_day/). The weights, if downloaded in the full folder, may be loaded with Option 1. **Though I have not tried the weights. Nor do I encourage using leaked weights.**
 
 **Update:** Colab is supported! You can run this demo on Colab for free even on T4. <a target="_blank" href="https://colab.research.google.com/github/TonyLianLong/stable-diffusion-xl-demo/blob/main/Stable_Diffusion_XL_Demo.ipynb">
@@ -96,5 +98,6 @@ Turn on `torch.compile` will make overall inference faster. However, this will a
 * `ENABLE_REFINER=true/false` turn on/off the refiner ([refiner](https://huggingface.co/stabilityai/stable-diffusion-xl-refiner-0.9) refines the generation).
 * `OUTPUT_IMAGES_BEFORE_REFINER=true/false` useful is refiner is enabled. Output images before and after the refiner stage.
 * `SHARE=true/false` creates public link (useful for sharing and on colab)
+* `MULTI_GPU=true/false` enables data parallelism on multi gpus.
 
 ## If you enjoy this demo, please give [this repo](https://github.com/TonyLianLong/stable-diffusion-xl-demo) a star ⭐.

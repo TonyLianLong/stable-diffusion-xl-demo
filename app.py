@@ -8,6 +8,8 @@ from io import BytesIO
 import os
 import gc
 
+# Only used when MULTI_GPU set to True
+from helper import UNetDataParallel
 from share_btn import community_icon_html, loading_icon_html, share_js
 
 # SDXL code: https://github.com/huggingface/diffusers/pull/3859
@@ -34,8 +36,14 @@ share = os.getenv("SHARE", "false").lower() == "true"
 print("Loading model", model_key_base)
 pipe = DiffusionPipeline.from_pretrained(model_key_base, torch_dtype=torch.float16, use_safetensors=True, variant="fp16", use_auth_token=access_token)
 
-pipe.enable_model_cpu_offload()
-# pipe.to("cuda")
+multi_gpu = os.getenv("MULTI_GPU", "false").lower() == "true"
+
+if multi_gpu:
+    pipe.unet = UNetDataParallel(pipe.unet)
+    pipe.unet.config, pipe.unet.dtype, pipe.unet.add_embedding = pipe.unet.module.config, pipe.unet.module.dtype, pipe.unet.module.add_embedding
+    pipe.to("cuda")
+else:
+    pipe.enable_model_cpu_offload()
 
 # if using torch < 2.0
 # pipe.enable_xformers_memory_efficient_attention()
@@ -45,8 +53,12 @@ pipe.enable_model_cpu_offload()
 if enable_refiner:
     print("Loading model", model_key_refiner)
     pipe_refiner = DiffusionPipeline.from_pretrained(model_key_refiner, torch_dtype=torch.float16, use_safetensors=True, variant="fp16", use_auth_token=access_token)
-    pipe_refiner.enable_model_cpu_offload()
-    # pipe_refiner.to("cuda")
+    if multi_gpu:
+        pipe_refiner.unet = UNetDataParallel(pipe_refiner.unet)
+        pipe_refiner.unet.config, pipe_refiner.unet.dtype, pipe_refiner.unet.add_embedding = pipe_refiner.unet.module.config, pipe_refiner.unet.module.dtype, pipe_refiner.unet.module.add_embedding
+        pipe_refiner.to("cuda")
+    else:
+        pipe_refiner.enable_model_cpu_offload()
 
     # if using torch < 2.0
     # pipe_refiner.enable_xformers_memory_efficient_attention()
