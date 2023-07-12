@@ -58,12 +58,17 @@ if enable_refiner:
 is_gpu_busy = False
 def infer(prompt, negative, scale, samples=4, steps=50, refiner_strength=0.3):
     prompt, negative = [prompt] * samples, [negative] * samples
-    images = pipe(prompt=prompt, negative_prompt=negative, guidance_scale=scale, num_inference_steps=steps).images
+
+    images_b64_list = []
+
+    if not enable_refiner or output_images_before_refiner:
+        images = pipe(prompt=prompt, negative_prompt=negative, guidance_scale=scale, num_inference_steps=steps).images
+    else:
+        # This skips the decoding and re-encoding for refinement.
+        images = pipe(prompt=prompt, negative_prompt=negative, guidance_scale=scale, num_inference_steps=steps, output_type="latent").images
 
     gc.collect()
     torch.cuda.empty_cache()
-
-    images_b64_list = []
 
     if enable_refiner:
         if output_images_before_refiner:
