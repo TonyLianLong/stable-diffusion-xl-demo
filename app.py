@@ -23,10 +23,15 @@ else:
     model_key_base = "stabilityai/stable-diffusion-xl-base-0.9"
     model_key_refiner = "stabilityai/stable-diffusion-xl-refiner-0.9"
 
+# Process environment variables
+
 # Use refiner (enabled by default)
 enable_refiner = os.getenv("ENABLE_REFINER", "true").lower() == "true"
 # Output images before the refiner and after the refiner
 output_images_before_refiner = os.getenv("OUTPUT_IMAGES_BEFORE_REFINER", "false").lower() == "true"
+
+offload_base = os.getenv("OFFLOAD_BASE", "true").lower() == "true"
+offload_refiner = os.getenv("OFFLOAD_REFINER", "true").lower() == "true"
 
 # Create public link
 share = os.getenv("SHARE", "false").lower() == "true"
@@ -34,8 +39,10 @@ share = os.getenv("SHARE", "false").lower() == "true"
 print("Loading model", model_key_base)
 pipe = DiffusionPipeline.from_pretrained(model_key_base, torch_dtype=torch.float16, use_safetensors=True, variant="fp16", use_auth_token=access_token)
 
-pipe.enable_model_cpu_offload()
-# pipe.to("cuda")
+if offload_base:
+    pipe.enable_model_cpu_offload()
+else:
+    pipe.to("cuda")
 
 # if using torch < 2.0
 # pipe.enable_xformers_memory_efficient_attention()
@@ -45,8 +52,11 @@ pipe.enable_model_cpu_offload()
 if enable_refiner:
     print("Loading model", model_key_refiner)
     pipe_refiner = DiffusionPipeline.from_pretrained(model_key_refiner, torch_dtype=torch.float16, use_safetensors=True, variant="fp16", use_auth_token=access_token)
-    pipe_refiner.enable_model_cpu_offload()
-    # pipe_refiner.to("cuda")
+    
+    if offload_refiner:
+        pipe_refiner.enable_model_cpu_offload()
+    else:
+        pipe_refiner.to("cuda")
 
     # if using torch < 2.0
     # pipe_refiner.enable_xformers_memory_efficient_attention()

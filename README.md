@@ -87,13 +87,14 @@ PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:512 ACCESS_TOKEN=YOUR_HF_ACCESS_TOKEN 
 Turn on `torch.compile` will make overall inference faster. However, this will add some overhead to the first run (i.e., have to wait for compilation during the first run).
 
 ### To save memory
-1. Turn on `pipe.enable_model_cpu_offload()` and turn off `pipe.to("cuda")` in `app.py`.
+1. Turn on `pipe.enable_model_cpu_offload()` and turn off `pipe.to("cuda")` in `app.py` (with `OFFLOAD_BASE` and `OFFLOAD_REFINER`, already enabled by default).
 2. Turn off refiner by setting `enable_refiner` to False.
 3. More ways to [save memory and make things faster](https://huggingface.co/docs/diffusers/optimization/fp16).
 
 ### Several options through environment variables
 * `SDXL_MODEL_DIR` and `ACCESS_TOKEN`: load SDXL locally or from HF hub.
 * `ENABLE_REFINER=true/false` turn on/off the refiner ([refiner](https://huggingface.co/stabilityai/stable-diffusion-xl-refiner-0.9) refines the generation).
+* `OFFLOAD_BASE` and `OFFLOAD_REFINER` can be set to true/false to enable/disable model offloading (model offloading saves memory at the cost of slowing down generation).
 * `OUTPUT_IMAGES_BEFORE_REFINER=true/false` useful is refiner is enabled. Output images before and after the refiner stage.
 * `SHARE=true/false` creates public link (useful for sharing and on colab)
 
