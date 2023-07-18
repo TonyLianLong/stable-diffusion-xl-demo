@@ -79,6 +79,8 @@ If you have cloned both repo ([base](https://huggingface.co/stabilityai/stable-d
 PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:512 SDXL_MODEL_DIR=/path_to_sdxl python app.py
 ```
 
+Note that `stable-diffusion-xl-base-0.9` and `stable-diffusion-xl-refiner-0.9` should be placed in a directory. The path of the directory should replace `/path_to_sdxl`.
+
 ### Option 2
 If you want to load from the huggingface hub (please set up a [HuggingFace access token](https://huggingface.co/docs/hub/security-tokens)):
 ```
