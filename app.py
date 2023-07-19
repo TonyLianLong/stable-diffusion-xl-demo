@@ -68,9 +68,22 @@ if enable_refiner:
 # NOTE: we do not have word list filtering in this gradio demo
 
 is_gpu_busy = False
-def infer(prompt, negative, scale, samples=4, steps=50, refiner_strength=0.3):
+def infer(prompt, negative, scale, samples=4, steps=50, refiner_strength=0.3, seed=-1):
     prompt, negative = [prompt] * samples, [negative] * samples
-    images = pipe(prompt=prompt, negative_prompt=negative, guidance_scale=scale, num_inference_steps=steps).images
+
+    g = torch.Generator(device="cuda")
+    if seed != -1:
+        g.manual_seed(seed)
+    else:
+        g.seed()
+
+    images_b64_list = []
+
+    if not enable_refiner or output_images_before_refiner:
+        images = pipe(prompt=prompt, negative_prompt=negative, guidance_scale=scale, num_inference_steps=steps, generator=g).images
+    else:
+        # This skips the decoding and re-encoding for refinement.
+        images = pipe(prompt=prompt, negative_prompt=negative, guidance_scale=scale, num_inference_steps=steps, output_type="latent", generator=g).images
 
     gc.collect()
     torch.cuda.empty_cache()
@@ -87,7 +100,7 @@ def infer(prompt, negative, scale, samples=4, steps=50, refiner_strength=0.3):
                 image_b64 = (f"data:image/jpeg;base64,{img_str}")
                 images_b64_list.append(image_b64)
 
-        images = pipe_refiner(prompt=prompt, negative_prompt=negative, image=images, num_inference_steps=steps, strength=refiner_strength).images
+        images = pipe_refiner(prompt=prompt, negative_prompt=negative, image=images, num_inference_steps=steps, strength=refiner_strength, generator=g).images
 
         gc.collect()
         torch.cuda.empty_cache()
@@ -376,19 +389,20 @@ with block:
             guidance_scale = gr.Slider(
                 label="Guidance Scale", minimum=0, maximum=50, value=9, step=0.1
             )
-        #    seed = gr.Slider(
-        #        label="Seed",
-        #        minimum=0,
-        #        maximum=2147483647,
-        #        step=1,
-        #        randomize=True,
-        #    )
+
+            seed = gr.Slider(
+                label="Seed",
+                minimum=-1,
+                maximum=2147483647,
+                step=1,
+                randomize=True,
+            )
 
         ex = gr.Examples(examples=examples, fn=infer, inputs=[text, negative, guidance_scale], outputs=[gallery, community_icon, loading_icon, share_button], cache_examples=False)
         ex.dataset.headers = [""]
-        negative.submit(infer, inputs=[text, negative, guidance_scale, samples, steps, refiner_strength], outputs=[gallery], postprocess=False)
-        text.submit(infer, inputs=[text, negative, guidance_scale, samples, steps, refiner_strength], outputs=[gallery], postprocess=False)
-        btn.click(infer, inputs=[text, negative, guidance_scale, samples, steps, refiner_strength], outputs=[gallery], postprocess=False)
+        negative.submit(infer, inputs=[text, negative, guidance_scale, samples, steps, refiner_strength, seed], outputs=[gallery], postprocess=False)
+        text.submit(infer, inputs=[text, negative, guidance_scale, samples, steps, refiner_strength, seed], outputs=[gallery], postprocess=False)
+        btn.click(infer, inputs=[text, negative, guidance_scale, samples, steps, refiner_strength, seed], outputs=[gallery], postprocess=False)
         
         #advanced_button.click(
         #    None,
