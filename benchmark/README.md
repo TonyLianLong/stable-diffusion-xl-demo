@@ -1,5 +1,5 @@
 # Comparison: SDv1.5 vs SDv2.1 vs SDXL
-[View SDv1.5 vs SDXL here](SDXL_SDv1.5.md). [View SDv2.1 vs SDXL here](SDXL_SDv2.1.md).
+[View SDv2.1 vs SDv1.5 vs SDXL (1 image per prompt) here](SDXL_SDv2.1.md). [View SDv1.5 vs SDXL here](SDXL_SDv1.5.md). [View SDv2.1 vs SDXL here](SDXL_SDv2.1.md).
 
 <table>
           <th><td>Prompt</td><td width='30%'>SD v1.5</td><td width='30%'>SD v2.1</td><td width='30%'>SDXL</td>
