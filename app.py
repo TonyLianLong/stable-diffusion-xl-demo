@@ -24,10 +24,15 @@ else:
     model_key_base = "stabilityai/stable-diffusion-xl-base-1.0"
     model_key_refiner = "stabilityai/stable-diffusion-xl-refiner-1.0"
 
+# Process environment variables
+
 # Use refiner (enabled by default)
 enable_refiner = os.getenv("ENABLE_REFINER", "true").lower() == "true"
 # Output images before the refiner and after the refiner
 output_images_before_refiner = os.getenv("OUTPUT_IMAGES_BEFORE_REFINER", "false").lower() == "true"
+
+offload_base = os.getenv("OFFLOAD_BASE", "true").lower() == "true"
+offload_refiner = os.getenv("OFFLOAD_REFINER", "true").lower() == "true"
 
 # Generate how many images by default
 default_num_images = int(os.getenv("DEFAULT_NUM_IMAGES", "4"))
@@ -47,7 +52,10 @@ if multi_gpu:
     pipe.unet.config, pipe.unet.dtype, pipe.unet.add_embedding = pipe.unet.module.config, pipe.unet.module.dtype, pipe.unet.module.add_embedding
     pipe.to("cuda")
 else:
-    pipe.enable_model_cpu_offload()
+    if offload_base:
+        pipe.enable_model_cpu_offload()
+    else:
+        pipe.to("cuda")
 
 # if using torch < 2.0
 # pipe.enable_xformers_memory_efficient_attention()
@@ -62,7 +70,10 @@ if enable_refiner:
         pipe_refiner.unet.config, pipe_refiner.unet.dtype, pipe_refiner.unet.add_embedding = pipe_refiner.unet.module.config, pipe_refiner.unet.module.dtype, pipe_refiner.unet.module.add_embedding
         pipe_refiner.to("cuda")
     else:
-        pipe_refiner.enable_model_cpu_offload()
+        if offload_refiner:
+            pipe_refiner.enable_model_cpu_offload()
+        else:
+            pipe_refiner.to("cuda")
 
     # if using torch < 2.0
     # pipe_refiner.enable_xformers_memory_efficient_attention()
@@ -91,8 +102,6 @@ def infer(prompt, negative, scale, samples=4, steps=50, refiner_strength=0.3, se
 
     gc.collect()
     torch.cuda.empty_cache()
-
-    images_b64_list = []
 
     if enable_refiner:
         if output_images_before_refiner:

@@ -97,6 +97,7 @@ Turn on `torch.compile` will make overall inference faster. However, this will a
 ### Several options through environment variables
 * `SDXL_MODEL_DIR`: load SDXL locally.
 * `ENABLE_REFINER=true/false` turn on/off the refiner ([refiner](https://huggingface.co/stabilityai/stable-diffusion-xl-refiner-1.0) refines the generation).
+* `OFFLOAD_BASE` and `OFFLOAD_REFINER` can be set to true/false to enable/disable model offloading (model offloading saves memory at the cost of slowing down generation).
 * `OUTPUT_IMAGES_BEFORE_REFINER=true/false` useful is refiner is enabled. Output images before and after the refiner stage.
 * `SHARE=true/false` creates public link (useful for sharing and on colab)
 * `MULTI_GPU=true/false` enables data parallelism on multi gpus.
