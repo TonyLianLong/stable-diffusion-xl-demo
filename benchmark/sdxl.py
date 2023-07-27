@@ -9,19 +9,17 @@ from prompts import prompt_list
 # SDXL code: https://github.com/huggingface/diffusers/pull/3859
 
 model_dir = os.getenv("SDXL_MODEL_DIR")
-access_token = os.getenv("ACCESS_TOKEN")
-
 
 if model_dir:
     # Use local model
-    model_key_base = os.path.join(model_dir, "stable-diffusion-xl-base-0.9")
-    model_key_refiner = os.path.join(model_dir, "stable-diffusion-xl-refiner-0.9")
+    model_key_base = os.path.join(model_dir, "stable-diffusion-xl-base-1.0")
+    model_key_refiner = os.path.join(model_dir, "stable-diffusion-xl-refiner-1.0")
 else:
-    model_key_base = "stabilityai/stable-diffusion-xl-base-0.9"
-    model_key_refiner = "stabilityai/stable-diffusion-xl-refiner-0.9"
+    model_key_base = "stabilityai/stable-diffusion-xl-base-1.0"
+    model_key_refiner = "stabilityai/stable-diffusion-xl-refiner-1.0"
 
 print("Loading model", model_key_base)
-pipe = DiffusionPipeline.from_pretrained(model_key_base, torch_dtype=torch.float16, use_safetensors=True, variant="fp16", use_auth_token=access_token)
+pipe = DiffusionPipeline.from_pretrained(model_key_base, torch_dtype=torch.float16, use_safetensors=True, variant="fp16")
 
 pipe.enable_model_cpu_offload()
 # pipe.to("cuda")
@@ -29,7 +27,7 @@ pipe.enable_model_cpu_offload()
 # pipe.unet = torch.compile(pipe.unet, mode="reduce-overhead", fullgraph=True)
 
 print("Loading model", model_key_refiner)
-pipe_refiner = DiffusionPipeline.from_pretrained(model_key_refiner, torch_dtype=torch.float16, use_safetensors=True, variant="fp16", use_auth_token=access_token)
+pipe_refiner = DiffusionPipeline.from_pretrained(model_key_refiner, torch_dtype=torch.float16, use_safetensors=True, variant="fp16")
 pipe_refiner.enable_model_cpu_offload()
 # pipe_refiner.to("cuda")
 
@@ -59,7 +57,7 @@ def generate(prompt, negative, scale, samples=4, steps=50, refiner_strength=0.3,
     for i, image in enumerate(images):
         image.save(prompt_to_path(prompt, seed, i), format="JPEG")
 
-neg_prompt = "low-quality, artifacts, blurry, smooth texture, bad quality, distortions, unrealistic, distorted image, bad proportions, watermark"
+neg_prompt = "low-quality, artifacts, blurry, watermark"
 
 if __name__ == "__main__":
     for prompt_id, prompt in enumerate(tqdm(prompt_list)):
