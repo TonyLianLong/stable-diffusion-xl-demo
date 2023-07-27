@@ -8,20 +8,21 @@ from io import BytesIO
 import os
 import gc
 
+# Only used when MULTI_GPU set to True
+from helper import UNetDataParallel
 from share_btn import community_icon_html, loading_icon_html, share_js
 
 # SDXL code: https://github.com/huggingface/diffusers/pull/3859
 
 model_dir = os.getenv("SDXL_MODEL_DIR")
-access_token = os.getenv("ACCESS_TOKEN")
 
 if model_dir:
     # Use local model
-    model_key_base = os.path.join(model_dir, "stable-diffusion-xl-base-0.9")
-    model_key_refiner = os.path.join(model_dir, "stable-diffusion-xl-refiner-0.9")
+    model_key_base = os.path.join(model_dir, "stable-diffusion-xl-base-1.0")
+    model_key_refiner = os.path.join(model_dir, "stable-diffusion-xl-refiner-1.0")
 else:
-    model_key_base = "stabilityai/stable-diffusion-xl-base-0.9"
-    model_key_refiner = "stabilityai/stable-diffusion-xl-refiner-0.9"
+    model_key_base = "stabilityai/stable-diffusion-xl-base-1.0"
+    model_key_refiner = "stabilityai/stable-diffusion-xl-refiner-1.0"
 
 # Process environment variables
 
@@ -33,16 +34,28 @@ output_images_before_refiner = os.getenv("OUTPUT_IMAGES_BEFORE_REFINER", "false"
 offload_base = os.getenv("OFFLOAD_BASE", "true").lower() == "true"
 offload_refiner = os.getenv("OFFLOAD_REFINER", "true").lower() == "true"
 
+# Generate how many images by default
+default_num_images = int(os.getenv("DEFAULT_NUM_IMAGES", "4"))
+if default_num_images < 1:
+    default_num_images = 1
+
 # Create public link
 share = os.getenv("SHARE", "false").lower() == "true"
 
 print("Loading model", model_key_base)
-pipe = DiffusionPipeline.from_pretrained(model_key_base, torch_dtype=torch.float16, use_safetensors=True, variant="fp16", use_auth_token=access_token)
+pipe = DiffusionPipeline.from_pretrained(model_key_base, torch_dtype=torch.float16, use_safetensors=True, variant="fp16")
 
-if offload_base:
-    pipe.enable_model_cpu_offload()
-else:
+multi_gpu = os.getenv("MULTI_GPU", "false").lower() == "true"
+
+if multi_gpu:
+    pipe.unet = UNetDataParallel(pipe.unet)
+    pipe.unet.config, pipe.unet.dtype, pipe.unet.add_embedding = pipe.unet.module.config, pipe.unet.module.dtype, pipe.unet.module.add_embedding
     pipe.to("cuda")
+else:
+    if offload_base:
+        pipe.enable_model_cpu_offload()
+    else:
+        pipe.to("cuda")
 
 # if using torch < 2.0
 # pipe.enable_xformers_memory_efficient_attention()
@@ -51,12 +64,16 @@ else:
 
 if enable_refiner:
     print("Loading model", model_key_refiner)
-    pipe_refiner = DiffusionPipeline.from_pretrained(model_key_refiner, torch_dtype=torch.float16, use_safetensors=True, variant="fp16", use_auth_token=access_token)
-    
-    if offload_refiner:
-        pipe_refiner.enable_model_cpu_offload()
-    else:
+    pipe_refiner = DiffusionPipeline.from_pretrained(model_key_refiner, torch_dtype=torch.float16, use_safetensors=True, variant="fp16")
+    if multi_gpu:
+        pipe_refiner.unet = UNetDataParallel(pipe_refiner.unet)
+        pipe_refiner.unet.config, pipe_refiner.unet.dtype, pipe_refiner.unet.add_embedding = pipe_refiner.unet.module.config, pipe_refiner.unet.module.dtype, pipe_refiner.unet.module.add_embedding
         pipe_refiner.to("cuda")
+    else:
+        if offload_refiner:
+            pipe_refiner.enable_model_cpu_offload()
+        else:
+            pipe_refiner.to("cuda")
 
     # if using torch < 2.0
     # pipe_refiner.enable_xformers_memory_efficient_attention()
@@ -313,11 +330,11 @@ with block:
                   <rect x="23" y="69" width="23" height="23" fill="black"></rect>
                 </svg>
                 <h1 style="font-weight: 900; margin-bottom: 7px;margin-top:5px">
-                  Stable Diffusion XL 0.9 Demo
+                  Stable Diffusion XL 1.0 Demo
                 </h1>
               </div>
               <p style="margin-bottom: 10px; font-size: 94%; line-height: 23px;">
-                Stable Diffusion XL 0.9 is the latest text-to-image model from StabilityAI. 
+                Stable Diffusion XL 1.0 is the latest text-to-image model from StabilityAI. 
                 <a style="text-decoration: underline;" href="https://huggingface.co/spaces/stabilityai/stable-diffusion">Access SD v2.1 Space</a> <a style="text-decoration: underline;" href="https://huggingface.co/spaces/stabilityai/stable-diffusion-1">SD v1 Space</a>
                 <br/>
                 For faster generation and API access you can try
@@ -376,7 +393,7 @@ with block:
 
         with gr.Accordion("Advanced settings", open=False):
         #    gr.Markdown("Advanced settings are temporarily unavailable")
-            samples = gr.Slider(label="Images", minimum=1, maximum=4, value=4, step=1)
+            samples = gr.Slider(label="Images", minimum=1, maximum=max(4, default_num_images), value=default_num_images, step=1)
             steps = gr.Slider(label="Steps", minimum=1, maximum=250, value=50, step=1)
             if enable_refiner:
                 refiner_strength = gr.Slider(label="Refiner Strength", minimum=0, maximum=1.0, value=0.3, step=0.1)
