@@ -94,7 +94,7 @@ def infer(prompt, negative, scale, samples=4, steps=50, refiner_strength=0.3, se
 
     images_b64_list = []
 
-    if not enable_refiner or output_images_before_refiner:
+    if not (enable_refiner and refiner_strength) or output_images_before_refiner:
         images = pipe(prompt=prompt, negative_prompt=negative, guidance_scale=scale, num_inference_steps=steps, generator=g).images
     else:
         # This skips the decoding and re-encoding for refinement.
@@ -103,7 +103,7 @@ def infer(prompt, negative, scale, samples=4, steps=50, refiner_strength=0.3, se
     gc.collect()
     torch.cuda.empty_cache()
 
-    if enable_refiner:
+    if enable_refiner and refiner_strength:
         if output_images_before_refiner:
             for image in images:
                 buffered = BytesIO()
