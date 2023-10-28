@@ -15,12 +15,14 @@ This is a gradio demo with web ui supporting [Stable Diffusion XL 1.0](https://g
 
 This is forked from [StableDiffusion v2.1 Demo WebUI](https://huggingface.co/spaces/gradio-client-demos/stable-diffusion). Refer to the git commits to see the changes.
 
-**Update:** [SD XL 1.0](https://huggingface.co/stabilityai/stable-diffusion-xl-base-1.0) is released and our Web UI demo supports it! No application is needed to get the weights! Launch the colab to get started. You can run this demo on Colab for free even on T4. <a target="_blank" href="https://colab.research.google.com/github/TonyLianLong/stable-diffusion-xl-demo/blob/main/Stable_Diffusion_XL_Demo.ipynb">
+**Update:** Check out our work <a href='https://llm-grounded-diffusion.github.io/'>**LLM-grounded Diffusion (LMD)**</a>, which introduces LLMs into the diffusion world and achieves much better prompt understanding compared to the standard Stable Diffusion without any fine-tuning! LMD with SDXL is supported on <a href='https://github.com/TonyLianLong/LLM-groundedDiffusion'>our Github repo</a> and <a href='https://huggingface.co/spaces/longlian/llm-grounded-diffusion'>a demo with SD is available</a>.
+
+**Update:** [SDXL 1.0](https://huggingface.co/stabilityai/stable-diffusion-xl-base-1.0) is released and our Web UI demo supports it! No application is needed to get the weights! Launch the colab to get started. You can run this demo on Colab for free even on T4. <a target="_blank" href="https://colab.research.google.com/github/TonyLianLong/stable-diffusion-xl-demo/blob/main/Stable_Diffusion_XL_Demo.ipynb">
   <img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/>
+</a>
 
 **Update:** Multiple GPUs are supported. You can easily spread the workload to different GPUs by setting `MULTI_GPU=True`. This uses data parallelism to split the workload to different GPUs.
 
-</a>
 
 ## Examples
 
