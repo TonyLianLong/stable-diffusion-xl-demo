@@ -1,12 +1,13 @@
 import gradio as gr
 
-from diffusers import DiffusionPipeline
+from diffusers import DiffusionPipeline, LCMScheduler
 import torch
 
 import base64
 from io import BytesIO
 import os
 import gc
+import warnings
 
 # Only used when MULTI_GPU set to True
 from helper import UNetDataParallel
@@ -14,24 +15,29 @@ from share_btn import community_icon_html, loading_icon_html, share_js
 
 # SDXL code: https://github.com/huggingface/diffusers/pull/3859
 
-model_dir = os.getenv("SDXL_MODEL_DIR")
-
-if model_dir:
-    # Use local model
-    model_key_base = os.path.join(model_dir, "stable-diffusion-xl-base-1.0")
-    model_key_refiner = os.path.join(model_dir, "stable-diffusion-xl-refiner-1.0")
+# Process environment variables
+# Use `segmind/SSD-1B` (distilled SDXL) for faster generation.
+use_ssd = os.getenv("USE_SSD", "false").lower() == "true"
+if use_ssd:
+    model_key_base = "segmind/SSD-1B"
+    model_key_refiner = "stabilityai/stable-diffusion-xl-refiner-1.0"
+    lcm_lora_id = "latent-consistency/lcm-lora-ssd-1b"
 else:
     model_key_base = "stabilityai/stable-diffusion-xl-base-1.0"
     model_key_refiner = "stabilityai/stable-diffusion-xl-refiner-1.0"
+    lcm_lora_id = "latent-consistency/lcm-lora-sdxl"
 
-# Process environment variables
+# Use LCM LoRA (enabled by default)
+if "ENABLE_LCM" not in os.environ:
+    warnings.warn("`ENABLE_LCM` environment variable is not set. LCM LoRA will be loaded by default and refiner will be disabled by default. You can set it to `False` to turn off LCM LoRA.")
 
-# Use refiner (enabled by default)
-enable_refiner = os.getenv("ENABLE_REFINER", "true").lower() == "true"
+enable_lcm = os.getenv("ENABLE_LCM", "true").lower() == "true"
+# Use refiner (disabled by default if LCM is enabled)
+enable_refiner = os.getenv("ENABLE_REFINER", "false" if enable_lcm or use_ssd else "true").lower() == "true"
 # Output images before the refiner and after the refiner
 output_images_before_refiner = os.getenv("OUTPUT_IMAGES_BEFORE_REFINER", "false").lower() == "true"
 
-offload_base = os.getenv("OFFLOAD_BASE", "true").lower() == "true"
+offload_base = os.getenv("OFFLOAD_BASE", "false").lower() == "true"
 offload_refiner = os.getenv("OFFLOAD_REFINER", "true").lower() == "true"
 
 # Generate how many images by default
@@ -44,6 +50,10 @@ share = os.getenv("SHARE", "false").lower() == "true"
 
 print("Loading model", model_key_base)
 pipe = DiffusionPipeline.from_pretrained(model_key_base, torch_dtype=torch.float16, use_safetensors=True, variant="fp16")
+
+if enable_lcm:
+    pipe.load_lora_weights(lcm_lora_id)
+    pipe.scheduler = LCMScheduler.from_config(pipe.scheduler.config)
 
 multi_gpu = os.getenv("MULTI_GPU", "false").lower() == "true"
 
@@ -128,7 +138,7 @@ def infer(prompt, negative, scale, samples=4, steps=50, refiner_strength=0.3, se
     
     return images_b64_list
     
-    
+# Reference: https://huggingface.co/spaces/google/sdxl/blob/main/app.py#L139
 css = """
         .gradio-container {
             font-family: 'IBM Plex Sans', sans-serif;
@@ -144,8 +154,8 @@ css = """
         .dark input[type='range'] {
             accent-color: #dfdfdf;
         }
-        .container {
-            max-width: 730px;
+        .gradio-container {
+            max-width: 730px !important;
             margin: auto;
             padding-top: 1.5rem;
         }
@@ -197,7 +207,7 @@ css = """
         .footer>p {
             font-size: .8rem;
             display: inline-block;
-            padding: 0 10px;
+            padding: 10px 10px;
             transform: translateY(10px);
             background: white;
         }
@@ -247,6 +257,10 @@ css = """
         }
         #prompt-container{
             gap: 0;
+            margin: 0 10px 0 0;
+        }
+        #generate-image-btn {
+            margin: 0 0 0 10px;
         }
         #prompt-text-input, #negative-prompt-text-input{padding: .45rem 0.625rem}
         #component-16{border-top-width: 1px!important;margin-top: 1em}
@@ -255,38 +269,40 @@ css = """
 
 block = gr.Blocks(css=css)
 
+default_guidance_scale = 1 if enable_lcm else 9
+    
 examples = [
     [
         'A high tech solarpunk utopia in the Amazon rainforest',
         'low quality',
-        9
+        default_guidance_scale
     ],
     [
         'A pikachu fine dining with a view to the Eiffel Tower',
         'low quality',
-        9
+        default_guidance_scale
     ],
     [
         'A mecha robot in a favela in expressionist style',
         'low quality, 3d, photorealistic',
-        9
+        default_guidance_scale
     ],
     [
         'an insect robot preparing a delicious meal',
         'low quality, illustration',
-        9
+        default_guidance_scale
     ],
     [
         "A small cabin on top of a snowy mountain in the style of Disney, artstation",
         'low quality, ugly',
-        9
+        default_guidance_scale
     ],
 ]
 
 
 with block:
     gr.HTML(
-        """
+        f"""
             <div style="text-align: center; margin: 0 auto;">
               <div
                 style="
@@ -335,22 +351,20 @@ with block:
               </div>
               <p style="margin-bottom: 10px; font-size: 94%; line-height: 23px;">
                 Stable Diffusion XL 1.0 is the latest text-to-image model from StabilityAI. 
-                <a style="text-decoration: underline;" href="https://huggingface.co/spaces/stabilityai/stable-diffusion">Access SD v2.1 Space</a> <a style="text-decoration: underline;" href="https://huggingface.co/spaces/stabilityai/stable-diffusion-1">SD v1 Space</a>
                 <br/>
-                For faster generation and API access you can try
+                Source code of this space is on 
                 <a
-                  href="http://beta.dreamstudio.ai/"
+                  href="https://github.com/TonyLianLong/stable-diffusion-xl-demo"
                   style="text-decoration: underline;"
                   target="_blank"
-                  >DreamStudio Beta</a
-                >.</a>
+                  >TonyLianLong/stable-diffusion-xl-demo</a>.
               </p>
             </div>
         """
     )
     with gr.Group():
         with gr.Box():
-            with gr.Row(elem_id="prompt-container").style(mobile_collapse=False, equal_height=True):
+            with gr.Row(elem_id="prompt-container", equal_height=True, style=dict(mobile_collapse=False)):
                 with gr.Column():
                     text = gr.Textbox(
                         label="Enter your prompt",
@@ -374,8 +388,7 @@ with block:
                         rounded=(True, False, False, True),
                         container=False,
                     )
-                btn = gr.Button("Generate image").style(
-                    margin=False,
+                btn = gr.Button("Generate image", elem_id="generate-image-btn").style(
                     rounded=(False, True, True, False),
                     full_width=False,
                 )
@@ -393,14 +406,18 @@ with block:
 
         with gr.Accordion("Advanced settings", open=False):
         #    gr.Markdown("Advanced settings are temporarily unavailable")
-            samples = gr.Slider(label="Images", minimum=1, maximum=max(4, default_num_images), value=default_num_images, step=1)
-            steps = gr.Slider(label="Steps", minimum=1, maximum=250, value=50, step=1)
+            samples = gr.Slider(label="Images", minimum=1, maximum=max(16 if enable_lcm else 4, default_num_images), value=default_num_images, step=1)
+            if enable_lcm:
+                steps = gr.Slider(label="Steps", minimum=1, maximum=10, value=4, step=1)
+            else:
+                steps = gr.Slider(label="Steps", minimum=1, maximum=250, value=50, step=1)
+                
             if enable_refiner:
                 refiner_strength = gr.Slider(label="Refiner Strength", minimum=0, maximum=1.0, value=0.3, step=0.1)
             else:
                 refiner_strength = gr.Slider(label="Refiner Strength (refiner not enabled)", minimum=0, maximum=0, value=0, step=0)
             guidance_scale = gr.Slider(
-                label="Guidance Scale", minimum=0, maximum=50, value=9, step=0.1
+                label="Guidance Scale", minimum=0, maximum=50, value=default_guidance_scale, step=0.1
             )
 
             seed = gr.Slider(
@@ -434,9 +451,10 @@ with block:
             _js=share_js,
         )
         gr.HTML(
-            """
+            f"""
                 <div class="footer">
-                    <p>Model by <a href="https://huggingface.co/stabilityai" style="text-decoration: underline;" target="_blank">StabilityAI</a> - Gradio Demo by 🤗 Hugging Face and <a style="text-decoration: underline;" href="https://tonylian.com/">Long (Tony) Lian</a>
+                    <p>
+                        This space uses {model_key_base} model{" with " + lcm_lora_id + " LCM LoRA" if enable_lcm else ""}. - Gradio Demo by 🤗 Hugging Face and <a style="text-decoration: underline;" href="https://tonylian.com/">Long (Tony) Lian</a> <br/>
                     </p>
                 </div>
            """
@@ -445,9 +463,9 @@ with block:
             gr.HTML(
                 """<div class="acknowledgments">
                     <p><h4>LICENSE</h4>
-The model is licensed with a <a href="https://huggingface.co/stabilityai/stable-diffusion-2/blob/main/LICENSE-MODEL" style="text-decoration: underline;" target="_blank">CreativeML OpenRAIL++</a> license. The authors claim no rights on the outputs you generate, you are free to use them and are accountable for their use which must not go against the provisions set in this license. The license forbids you from sharing any content that violates any laws, produce any harm to a person, disseminate any personal information that would be meant for harm, spread misinformation and target vulnerable groups. For the full list of restrictions please <a href="https://huggingface.co/spaces/CompVis/stable-diffusion-license" target="_blank" style="text-decoration: underline;" target="_blank">read the license</a></p>
+The SDXL 1.0 model is licensed with a <a href="https://huggingface.co/stabilityai/stable-diffusion-xl-base-1.0/blob/main/LICENSE.md" style="text-decoration: underline;" target="_blank">Stability AI CreativeML Open RAIL++-M</a> license. The License allows users to take advantage of the model in a wide range of settings (including free use and redistribution) as long as they respect the specific use case restrictions outlined, which correspond to model applications the licensor deems ill-suited for the model or are likely to cause harm. For the full list of restrictions please <a href="https://huggingface.co/stabilityai/stable-diffusion-xl-base-1.0/blob/main/LICENSE.md" style="text-decoration: underline;" target="_blank">read the license</a>.
                     <p><h4>Biases and content acknowledgment</h4>
-Despite how impressive being able to turn text into image is, beware to the fact that this model may output content that reinforces or exacerbates societal biases, as well as realistic faces, pornography and violence. The model was trained on the <a href="https://laion.ai/blog/laion-5b/" style="text-decoration: underline;" target="_blank">LAION-5B dataset</a>, which scraped non-curated image-text-pairs from the internet (the exception being the removal of illegal content) and is meant for research purposes. You can read more in the <a href="https://huggingface.co/CompVis/stable-diffusion-v1-4" style="text-decoration: underline;" target="_blank">model card</a></p>
+Despite how impressive being able to turn text into image is, beware to the fact that this model may output content that reinforces or exacerbates societal biases, as well as realistic faces, pornography and violence. The model was trained on the <a href="https://laion.ai/blog/laion-5b/" style="text-decoration: underline;" target="_blank">LAION-5B dataset</a>, which scraped non-curated image-text-pairs from the internet (the exception being the removal of illegal content) and is meant for research purposes. You can read more in the <a href="https://huggingface.co/stabilityai/stable-diffusion-xl-base-1.0" style="text-decoration: underline;" target="_blank">model card</a></p>
                </div>
                 """
             )

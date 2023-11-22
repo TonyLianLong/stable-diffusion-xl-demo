@@ -15,6 +15,8 @@ This is a gradio demo with web ui supporting [Stable Diffusion XL 1.0](https://g
 
 This is forked from [StableDiffusion v2.1 Demo WebUI](https://huggingface.co/spaces/gradio-client-demos/stable-diffusion). Refer to the git commits to see the changes.
 
+**Update 🔥🔥🔥: [Latent consistency models (LCM) LoRA](https://huggingface.co/blog/lcm_lora) is supported and enabled by default (controlled by `ENABLE_LCM`)! Turn on `USE_SSD` to use `SSD-1B` for a even faster generation (4 images in 2.6 seconds on a 4090 without additional optimizations)!**
+
 **Update 🔥🔥🔥:** Check out our work <a href='https://llm-grounded-diffusion.github.io/'>**LLM-grounded Diffusion (LMD)**</a>, which introduces LLMs into the diffusion world and achieves much better prompt understanding compared to the standard Stable Diffusion without any fine-tuning! LMD with SDXL is supported on <a href='https://github.com/TonyLianLong/LLM-groundedDiffusion'>our Github repo</a> and <a href='https://huggingface.co/spaces/longlian/llm-grounded-diffusion'>a demo with SD is available</a>.
 
 **Update:** [SDXL 1.0](https://huggingface.co/stabilityai/stable-diffusion-xl-base-1.0) is released and our Web UI demo supports it! No application is needed to get the weights! Launch the colab to get started. You can run this demo on Colab for free even on T4. <a target="_blank" href="https://colab.research.google.com/github/TonyLianLong/stable-diffusion-xl-demo/blob/main/Stable_Diffusion_XL_Demo.ipynb">
@@ -23,6 +25,7 @@ This is forked from [StableDiffusion v2.1 Demo WebUI](https://huggingface.co/spa
 
 **Update:** Multiple GPUs are supported. You can easily spread the workload to different GPUs by setting `MULTI_GPU=True`. This uses data parallelism to split the workload to different GPUs.
 
+<img src="imgs/sdxl_ssd_lcm.gif" width="48%" alt="SDXL with SSD-1B, LCM LoRA">
 
 ## Examples
 
@@ -97,8 +100,10 @@ Turn on `torch.compile` will make overall inference faster. However, this will a
 3. More ways to [save memory and make things faster](https://huggingface.co/docs/diffusers/optimization/fp16).
 
 ### Several options through environment variables
+* `USE_SSD`: use [segmind/SSD-1B](https://huggingface.co/segmind/SSD-1B). This is a distilled SDXL model that is faster. This is disabled by default.
+* `ENABLE_LCM`: use [LCM LoRA](https://huggingface.co/blog/lcm_lora). This is enabled by default.
 * `SDXL_MODEL_DIR`: load SDXL locally.
-* `ENABLE_REFINER=true/false` turn on/off the refiner ([refiner](https://huggingface.co/stabilityai/stable-diffusion-xl-refiner-1.0) refines the generation).
+* `ENABLE_REFINER=true/false` turn on/off the refiner ([refiner](https://huggingface.co/stabilityai/stable-diffusion-xl-refiner-1.0) refines the generation). The refiner is disabled by default if LCM LoRA or SSD model is enabled.
 * `OFFLOAD_BASE` and `OFFLOAD_REFINER` can be set to true/false to enable/disable model offloading (model offloading saves memory at the cost of slowing down generation).
 * `OUTPUT_IMAGES_BEFORE_REFINER=true/false` useful is refiner is enabled. Output images before and after the refiner stage.
 * `SHARE=true/false` creates public link (useful for sharing and on colab)
