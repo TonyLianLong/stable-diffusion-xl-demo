@@ -15,7 +15,9 @@ This is a gradio demo with web ui supporting [Stable Diffusion XL 1.0](https://g
 
 This is forked from [StableDiffusion v2.1 Demo WebUI](https://huggingface.co/spaces/gradio-client-demos/stable-diffusion). Refer to the git commits to see the changes.
 
-**Update 🔥🔥🔥: [Latent consistency models (LCM) LoRA](https://huggingface.co/blog/lcm_lora) is supported and enabled by default (controlled by `ENABLE_LCM`)! Turn on `USE_SSD` to use `SSD-1B` for a even faster generation (4 images in 2.6 seconds on a 4090 without additional optimizations)!**
+**Update 🔥🔥🔥: [Latent consistency models (LCM) LoRA](https://huggingface.co/blog/lcm_lora) is supported and enabled by default (controlled by `ENABLE_LCM`)! Turn on `USE_SSD` to use `SSD-1B` for a even faster generation (4.9 sec/image on free colab T4 without additional optimizations)!** Colab has been updated to use this by default. <a target="_blank" href="https://colab.research.google.com/github/TonyLianLong/stable-diffusion-xl-demo/blob/main/Stable_Diffusion_XL_Demo.ipynb">
+  <img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/>
+</a>
 
 **Update 🔥🔥🔥:** Check out our work <a href='https://llm-grounded-diffusion.github.io/'>**LLM-grounded Diffusion (LMD)**</a>, which introduces LLMs into the diffusion world and achieves much better prompt understanding compared to the standard Stable Diffusion without any fine-tuning! LMD with SDXL is supported on <a href='https://github.com/TonyLianLong/LLM-groundedDiffusion'>our Github repo</a> and <a href='https://huggingface.co/spaces/longlian/llm-grounded-diffusion'>a demo with SD is available</a>.
 
