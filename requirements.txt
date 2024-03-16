@@ -1,5 +1,5 @@
 --extra-index-url https://download.pytorch.org/whl/cu113
-torch==2.0.1
+torch>=2.0.1
 python-dotenv
 accelerate
 transformers
@@ -8,5 +8,5 @@ numpy>=1.17
 PyWavelets>=1.1.1
 opencv-python>=4.1.0.25
 safetensors
-gradio==3.14.0
+gradio>=3.14.0
 git+https://github.com/huggingface/diffusers.git
